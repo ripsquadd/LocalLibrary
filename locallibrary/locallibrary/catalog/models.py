@@ -1,11 +1,29 @@
 from django.db import models
+from django.forms import forms
 from django.urls import reverse  # Used to generate URLs by reversing the URL patterns
 import uuid  # Required for unique book instances
 from datetime import date
-from django.contrib.auth.models import User  # Required to assign User as a borrower
+from django.contrib.auth.models import User, AbstractUser  # Required to assign User as a borrower
 
 
 # Create your models here.
+
+class User(AbstractUser):
+    class Meta(AbstractUser.Meta):
+        pass
+
+class Cover(models.Model):
+    def validate_image(value):
+        size_limit = 2 * 1024 * 1024
+        if value.size > size_limit:
+            raise forms.ValidationError('Файл слишком большой. Размер файла не должен превышать 2MB')
+
+    cover = models.ImageField(validators=[validate_image], upload_to='cover/books/title', verbose_name='Изображения',
+                              blank=True, null=False)
+
+    class Meta:
+        verbose_name = 'Изображение'
+        verbose_name_plural = 'Изображения'
 
 class Genre(models.Model):
     """Model representing a book genre (e.g. Science Fiction, Non Fiction)."""
@@ -31,6 +49,7 @@ class Language(models.Model):
 
 class Book(models.Model):
     """Model representing a book (but not a specific copy of a book)."""
+    objects = None
     title = models.CharField(max_length=200)
     author = models.ForeignKey('Author', on_delete=models.SET_NULL, null=True)
     # Foreign Key used because book can only have one author, but authors can have multiple books
@@ -45,8 +64,20 @@ class Book(models.Model):
     # Genre class has already been defined so we can specify the object above.
     language = models.ForeignKey('Language', on_delete=models.SET_NULL, null=True)
 
+    def validate_image(value):
+        size_limit = 2 * 1024 * 1024
+        if value.size > size_limit:
+            raise forms.ValidationError('Файл слишком большой. Размер файла не должен превышать 2MB')
+
+    photoPreview = models.ImageField(validators=[validate_image], upload_to='cover', verbose_name='Изображения',
+                                     blank=False, null=True)
+    bookFile = models.FileField(upload_to=' ', verbose_name='Файл с книгой', blank=False, null=True)
+
+
     class Meta:
-        ordering = ['title', 'author']
+            unique_together = ('title', 'author')
+            verbose_name = 'Книга'
+            verbose_name_plural = 'Книги'
 
     def display_genre(self):
         """Creates a string for the Genre. This is required to display genre in Admin."""
@@ -103,13 +134,16 @@ class BookInstance(models.Model):
 
 class Author(models.Model):
     """Model representing an author."""
+    objects = None
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     date_of_birth = models.DateField(null=True, blank=True)
     date_of_death = models.DateField('died', null=True, blank=True)
 
     class Meta:
-        ordering = ['last_name', 'first_name']
+        unique_together = ('first_name', 'last_name', 'date_of_birth')
+        verbose_name = 'Автор'
+        verbose_name_plural = 'Авторы'
 
     def get_absolute_url(self):
         """Returns the url to access a particular author instance."""
