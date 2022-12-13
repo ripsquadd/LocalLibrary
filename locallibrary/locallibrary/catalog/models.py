@@ -12,6 +12,7 @@ class User(AbstractUser):
     class Meta(AbstractUser.Meta):
         pass
 
+
 class Cover(models.Model):
     def validate_image(value):
         size_limit = 2 * 1024 * 1024
@@ -24,6 +25,7 @@ class Cover(models.Model):
     class Meta:
         verbose_name = 'Изображение'
         verbose_name_plural = 'Изображения'
+
 
 class Genre(models.Model):
     """Model representing a book genre (e.g. Science Fiction, Non Fiction)."""
@@ -73,11 +75,10 @@ class Book(models.Model):
                                      blank=False, null=True)
     bookFile = models.FileField(upload_to=' ', verbose_name='Файл с книгой', blank=False, null=True)
 
-
     class Meta:
-            unique_together = ('title', 'author')
-            verbose_name = 'Книга'
-            verbose_name_plural = 'Книги'
+        unique_together = ('title', 'author')
+        verbose_name = 'Книга'
+        verbose_name_plural = 'Книги'
 
     def display_genre(self):
         """Creates a string for the Genre. This is required to display genre in Admin."""
@@ -102,6 +103,14 @@ class BookInstance(models.Model):
     imprint = models.CharField(max_length=200)
     due_back = models.DateField(null=True, blank=True)
     borrower = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def validate_image(value):
+        size_limit = 2 * 1024 * 1024
+        if value.size > size_limit:
+            raise forms.ValidationError('Файл слишком большой. Размер файла не должен превышать 2MB')
+
+    photo = models.ImageField(validators=[validate_image], upload_to='cover', verbose_name='Изображения',
+                              blank=False, null=True)
 
     @property
     def is_overdue(self):
@@ -152,4 +161,3 @@ class Author(models.Model):
     def __str__(self):
         """String for representing the Model object."""
         return '{0}, {1}'.format(self.last_name, self.first_name)
-

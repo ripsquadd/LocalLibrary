@@ -13,7 +13,7 @@
       {% for book in book_list %}
       <li>
             {% if book.photoPreview %}
-                <img class='img' src="{{ book.photoPreview.url }}" height=200>
+                <img class='img' src="{{ book.photoPreview.url }}" height=150>
             {% endif %}
         <a href="{{ book.get_absolute_url }}">{{ book.title }}</a> ({{book.author}})
       </li>
